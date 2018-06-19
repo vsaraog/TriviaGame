@@ -1,0 +1,16 @@
+body  {
+    /* background-image: url("http://www.tokkoro.com/picsup/1490076-star-wars-episode-vii-the-force-awakens.jpg"); */
+    background-repeat: no-repeat;
+    background-size: cover; 
+} 
+
+.back-layer {
+    background-color: yellow;
+    height: 90vh;
+    width: 90vh;
+    margin: 10%;
+}
+
+.vs-header {
+    font-size: 3rem;
+}
