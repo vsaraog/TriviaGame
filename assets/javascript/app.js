@@ -48,8 +48,8 @@ function initContainer() {
 
 $(document).on("click", ".btn-start", function() {
     $(this).remove();
+    createQuestionsView();
     triviaGame.start();
-    createQuizNodes();
 })
 
 var triviaGame = {
@@ -57,9 +57,9 @@ var triviaGame = {
     timeDisplayElem: null,
     setContainer: function(param) {
         this.container = param;
-        this.timeDisplayElem = $(this.container).find(".time-remaining");
     },
     start: function() {
+        this.timeDisplayElem = $(this.container).find(".time-remaining");
         timer.setTimer(MAX_TIME, triviaGame.timeChanged.bind(this));
     },
 
@@ -131,7 +131,7 @@ function getResult() {
     }
 }
 
-function createQuizNodes() {
+function createQuestionsView() {
     let questionListNode = $(".question-list");
 
     $("<div>").attr("class", "time-remaining").text("Time Remaining").appendTo(questionListNode);
