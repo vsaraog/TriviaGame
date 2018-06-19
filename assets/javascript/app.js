@@ -52,6 +52,14 @@ $(document).on("click", ".btn-start", function() {
     triviaGame.start();
 })
 
+$(document).on("click", ".btn-done", function() {
+    // VIK_TODO: Probably move to the "timesUp" function so the whole cleanup is 
+    // done in one place
+    $(this).remove();
+    // VIK_TODO: Give the function better name
+    triviaGame.timesUp();
+})
+
 var triviaGame = {
     container: null,
     timeDisplayElem: null,
@@ -60,7 +68,7 @@ var triviaGame = {
     },
     start: function() {
         this.timeDisplayElem = $(this.container).find(".time-remaining");
-        timer.setTimer(MAX_TIME, triviaGame.timeChanged.bind(this));
+        this.intervalId = timer.setTimer(MAX_TIME, triviaGame.timeChanged.bind(this));
     },
 
     timeChanged: function (timeLeft) {
@@ -73,7 +81,7 @@ var triviaGame = {
             }
     },
     timesUp : function() {
-        clearInterval(this.intervalId);
+        timer.clearTimer();
 
         getResult();
         removeQuestions();
@@ -179,6 +187,12 @@ function createQuestionsView() {
         }
     }
 
+    $("<button>").
+        attr("type", "button").
+        attr("class", "btn btn-done").
+        text("Done").
+        appendTo(questionListNode);
+
 
 }
 
@@ -210,4 +224,7 @@ var timer = {
             clearInterval(this.intervalId);
         }
     },
+    clearTimer() {
+        clearInterval(this.intervalId);
+    }
 }
