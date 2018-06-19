@@ -4,41 +4,7 @@
 "use strict";
 
 // Max time in seconds
-const MAX_TIME = 30;
-
-$(document).ready(function() {
-    initContainer();
-})
-
-
-function initContainer() {
-    triviaGame.setContainer( $(document).find(".container") );
-    // triviaGame.start(); // VIK_DEBUG: Uncomment later on
-    createQuizNode();
-}
-
-// function timeChanged(timeLeft) {
-//     console.log(timeLeft);
-// }
-
-var triviaGame = {
-    container: null,
-    timeDisplayElem: null,
-    setContainer: function(param) {
-        this.container = param;
-        this.timeDisplayElem = $(this.container).find(".time-remaining");
-    },
-    start: function() {
-        timer.setTimer(10, triviaGame.timeChanged);
-    },
-    timeChanged: function (timeLeft) {
-        console.log(timeLeft);
-        $(triviaGame.timeDisplayElem).text("Time Remaining: " +
-            timeLeft +
-            (timeLeft === 1 ? " second" : " seconds"));
-    }
-
-}
+const MAX_TIME = 5;
 
 const triviaQuestions =
 {
@@ -69,33 +35,107 @@ const triviaQuestions =
 var questionKeys = []; 
 var buildKeyArray = () => { for (let i in triviaQuestions) questionKeys.push(i); }
 buildKeyArray();
-// var buildOptionName = questionNum => "question" + questionNum;
+
+$(document).ready(function() {
+    initContainer();
+})
+
+
+function initContainer() {
+    triviaGame.setContainer( $(document).find(".container") );
+}
+
 
 $(document).on("click", ".btn-start", function() {
-    let correct = 0;
-    let incorrect = 0;
-    let unanswered = 0;
+    $(this).remove();
+    triviaGame.start();
+    createQuizNodes();
+})
+
+var triviaGame = {
+    container: null,
+    timeDisplayElem: null,
+    setContainer: function(param) {
+        this.container = param;
+        this.timeDisplayElem = $(this.container).find(".time-remaining");
+    },
+    start: function() {
+        timer.setTimer(MAX_TIME, triviaGame.timeChanged.bind(this));
+    },
+
+    timeChanged: function (timeLeft) {
+        $(triviaGame.timeDisplayElem).text("Time Remaining: " +
+            timeLeft +
+            (timeLeft === 1 ? " second" : " seconds"));
+
+            if (timeLeft <= 0) {
+                this.timesUp();
+            }
+    },
+    timesUp : function() {
+        clearInterval(this.intervalId);
+
+        getResult();
+        removeQuestions();
+        showResult();
+    }
+}
+
+function showResult()
+{
+    let parentNode = $(".back-layer");
+    $("<div>").text("All Done!").
+        appendTo(parentNode);
+
+    $("<div>").
+        attr("class", "result-item").
+        text("Correct Answers: " + result.correct).
+        appendTo(parentNode);
+
+    $("<div>").
+        attr("class", "result-item").
+        text("Incorrect Answers: " + result.incorrect).
+        appendTo(parentNode);
+
+    $("<div>").
+        attr("class", "result-item").
+        text("Unanswered: " + result.unanswered).
+        appendTo(parentNode);
+}
+
+function removeQuestions()
+{
+    $(".question-list").remove();
+}
+
+var result = {
+    correct: 0,
+    incorrect: 0,
+    unanswered: 0,
+}
+
+function getResult() {
     for (let i = 0; i < questionKeys.length; ++i) {
         const qKey = questionKeys[i];
         const qVal = $('input[name=' + qKey + ']:checked').val();
         let qObj = triviaQuestions[qKey];
         console.assert(qObj !== undefined, "question object not found for key " + qKey);
         if (qVal === undefined)
-            unanswered++;
+            result.unanswered++;
         else if (qVal === qObj.correctChoice)
-            correct++;
+            result.correct++;
         else
-            incorrect++;
+            result.incorrect++;
 
-        console.log(qVal);
+        // console.log(qVal);
     }
-    $(".correct-answers").append(correct);
-    $(".incorrect-answers").append(incorrect);
-    $(".unanswered").append(unanswered);
-})
+}
 
-function createQuizNode() {
+function createQuizNodes() {
     let questionListNode = $(".question-list");
+
+    $("<div>").attr("class", "time-remaining").text("Time Remaining").appendTo(questionListNode);
+
     let formGroup = $("<div>").attr("class", "form-group");
     formGroup.appendTo(questionListNode);
 
