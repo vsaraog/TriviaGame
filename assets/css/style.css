@@ -12,6 +12,10 @@ body  {
     margin: 10%;
 }
 
+#page-content {
+    padding-top: 100px;
+}
+
 .vs-header {
     padding-top: 2rem;
     font-size: 3rem;
@@ -52,4 +56,12 @@ body  {
 
   .vs-table-data-row {
     font-family: 'Cabin Condensed', sans-serif;
+  }
+
+  .vs-question-view-result {
+      font-size: 2rem;
+  }
+
+  .vs-question-view-answer {
+    font-size: 0.8rem;
   }

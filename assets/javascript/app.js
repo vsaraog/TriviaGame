@@ -351,7 +351,9 @@ function buildFinalResult()
     let parentNode = $("#page-content").html("");
 
     // let parentNode = $(".back-layer");
-    $("<div>").text("All Done!").
+    $("<div>").
+        text("All Done!").
+        addClass("vs-question-view-result").
         appendTo(parentNode);
 
     $("<div>").
@@ -461,21 +463,26 @@ function buildQuestionResultView(userChoice) {
         result.unanswered++;
     }
     else if (userChoice === qObj.correctChoice) {
-        heading = "Correct";
+        heading = "Correct!";
         correct = true;
         result.correct++;
     }
     else {
-        heading = "Nope";
+        heading = "Nope!";
         result.incorrect++;
     }
 
     let pageNode = $("#page-content").html("");
 
-    $("<div>").text(heading).appendTo(pageNode);
+    $("<div>").
+        text(heading).
+        addClass("vs-question-view-result").
+        appendTo(pageNode);
+
     if (!correct) {
         $("<div>").
             text("The correct answer was: " + qObj.correctChoice).
+            addClass("vs-queston-view-answer").
             appendTo(pageNode);
     }
 
