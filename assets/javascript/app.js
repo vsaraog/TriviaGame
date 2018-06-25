@@ -5,7 +5,11 @@
 
 // Max time in seconds
 const QUESTION_NUM  = 6;
-const MAX_TIME = 5 * QUESTION_NUM;
+const QUESTION_TIME = 15;
+const MAX_TIME = QUESTION_TIME * QUESTION_NUM;
+const QUESTION_TRANSTION_TIME = 5;
+const IMAGE_LINK =  "http://www.abflags.com/_flags/flags-of-the-world/states/usa/<state>%20flag/<state>%20flag-XL-anim.gif";
+
 
 const QUESTIONS =
 {
@@ -34,11 +38,11 @@ const QUESTIONS =
         question: "Capital of Alabama",
         choices: [
             "Mobile",
-            "Birigham",
+            "Montgomery",
             "Little Rock",
             "Springfield",
         ],
-        correctChoice: "Birigham"
+        correctChoice: "Montgomery"
     },
     "ak-capital": {
         question: "Captal of Alaska",
@@ -250,11 +254,13 @@ const QUESTIONS =
 }
  
 // VIK_TODO: assert that keys are unique
-var TriviaQuestions = new function() {
+var TriviaQuestions = (function() {
     let _quizQuestions = QUESTIONS;
     let _sessionKeys = [];
+    let my = {};
 
-    this.questionKeys = function() {
+    // this.questionKeys = function() {
+    function questionKeys() {
         // keys of the questions from question object
         let keys = [];
         for (let i in _quizQuestions) {
@@ -265,12 +271,12 @@ var TriviaQuestions = new function() {
     }
 
     // Keys of questions asked during a session
-     this.sessionQuestionKeys = function() {
+     my.sessionQuestionKeys = function() {
          // Already populated
          if (_sessionKeys.length > 0)
             return _sessionKeys;
 
-         let qKeys = this.questionKeys();
+         let qKeys = questionKeys();
         let randomIndices = getUniqueRandomNumbers( {min:0, max: qKeys.length}, 
             QUESTION_NUM);
         console.assert(qKeys.length > 0, "question keys is not populated");
@@ -281,12 +287,14 @@ var TriviaQuestions = new function() {
         return _sessionKeys;
     }
 
-    this.getQuestionObj = function(key) {
+    my.getQuestionObj = function(key) {
         console.assert(this.sessionQuestionKeys().includes(key), key + " is not in questions");
         if ( _quizQuestions[key] )
             return _quizQuestions[key];
     }
-}
+
+    return my;
+}());
  
  
 function randomGenerator(min, max, roundToNearest)
@@ -316,63 +324,33 @@ function getUniqueRandomNumbers(range, size) {
     return arr;
 }        
 
-
-$(document).ready(function() {
-    initContainer();
-})
-
-
-function initContainer() {
-    triviaGame.setContainer( $(document).find(".container") );
-}
-
-
-$(document).on("click", ".btn-start", function() {
-    $(this).remove();
-    createQuestionsView();
-    triviaGame.start();
-})
-
-$(document).on("click", ".btn-done", function() {
-    // VIK_TODO: Probably move to the "timesUp" function so the whole cleanup is 
-    // done in one place
-    $(this).remove();
-    // VIK_TODO: Give the function better name
-    triviaGame.timesUp();
-})
-
 var triviaGame = {
-    container: null,
+    // container: null,
     timeDisplayElem: null,
     setContainer: function(param) {
         this.container = param;
     },
     start: function() {
-        this.timeDisplayElem = $(this.container).find(".time-remaining");
-        this.intervalId = timer.setTimer(MAX_TIME, triviaGame.timeChanged.bind(this));
+        triviaGame.timeDisplayElem = $(document).find(".time-remaining");
+
+        var tm = timer;
+        tm.setTimer(QUESTION_TIME, triviaGame.timeChanged, buildQuestionResultView)
+
+        createQuestionView();
     },
 
     timeChanged: function (timeLeft) {
         $(triviaGame.timeDisplayElem).text("Time Remaining: " +
             timeLeft +
             (timeLeft === 1 ? " second" : " seconds"));
-
-            if (timeLeft <= 0) {
-                this.timesUp();
-            }
     },
-    timesUp : function() {
-        timer.clearTimer();
-
-        getResult();
-        removeQuestions();
-        showResult();
-    }
 }
 
-function showResult()
+function buildFinalResult()
 {
-    let parentNode = $(".back-layer");
+    let parentNode = $("#page-content").html("");
+
+    // let parentNode = $(".back-layer");
     $("<div>").text("All Done!").
         appendTo(parentNode);
 
@@ -394,7 +372,7 @@ function showResult()
 
 function removeQuestions()
 {
-    $(".question-list").remove();
+    $(".page-content").remove();
 }
 
 var result = {
@@ -403,115 +381,201 @@ var result = {
     unanswered: 0,
 }
 
-function getResult() {
-    let sesQKeys = TriviaQuestions.sessionQuestionKeys();
-    for (let i = 0; i < sesQKeys.length; ++i) {
-        const qKey = sesQKeys[i];
-        const qVal = $('input[name=' + qKey + ']:checked').val();
-        
-        const qObj = TriviaQuestions.getQuestionObj(qKey);
-        const correctAns = qObj && qObj.correctChoice;
-        if (qVal === undefined)
-            result.unanswered++;
-        else if (qVal === correctAns)
-            result.correct++;
-        else
-            result.incorrect++;
-    }
-}
-
-function createQuestionsView() {
-    let questionListNode = $(".question-list");
-
-    $("<div>").attr("class", "time-remaining").text("Time Remaining").appendTo(questionListNode);
-
-    let formGroup = $("<div>").attr("class", "form-group");
-    formGroup.appendTo(questionListNode);
-
-    // Random unique indicies of the question array
-    // let questionKeyIndicies = getUniqueRandomNumbers( {min:0, max:triviaQuestions.questionKeys.length}, QUESTION_NUM);
-    const sesQKeys = TriviaQuestions.sessionQuestionKeys();
-    for (let i = 0; i < sesQKeys.length; ++i) {
-        // Get the index, for which we will get the key and find the 
-        // question object using that key
-        // const index = questionKeyIndicies[i];
-        const qKey = sesQKeys[i];
-        const qObj = TriviaQuestions.getQuestionObj(qKey);
-
-        // Build the question element
-        let questionNode = $("<div>").
-            attr("class", "text-center");
-        let questionLblNode = $("<label>").text(qObj.question);
-        questionNode.append(questionLblNode);
-        formGroup.append(questionNode);
-
-        // let optionName = buildOptionName(i);
-        for (let j = 0; j < qObj.choices.length; ++j) {
-            let optionVal = qObj.choices[j];
-
-            // Build the top node of the radio button
-            let radioNode = $("<div>").
-                attr("class", "form-check form-check-inline");
-            formGroup.append(radioNode);
-
-            // Build the radio button
-            let optionId = qKey + "-" + "radio" + j;
-            let radioInput = $("<input>").
-                attr("class", "form-check-input").
-                attr("type", "radio").
-                attr("name", qKey).
-                attr("id", optionId).
-                attr("value", optionVal);
-
-            // Build the label element next to the radio button
-            let radioLabel = $("<label>").
-                attr("class", "form-check-label").
-                attr("for", optionId).
-                text(optionVal);
-
-            radioNode.append(radioInput);
-            radioNode.append(radioLabel);
-        }
-    }
-
-    $("<button>").
-        attr("type", "button").
-        attr("class", "btn btn-done").
-        text("Done").
-        appendTo(questionListNode);
-
-
-}
-
-function displayQuestions() {
-    // Take randomly selected 5 questions
-    // build the questions under .question-list
-
-
-}
-
-var timer = {
+var timer = ( function() {
     // Take initial time to start from
     // Should start up or down (@todo: nice to have)
+    
+    let my = {};
     // Time in seconds left in timer
-    timeLeft: 0,
+    let _timeLeft = 0;
     // Callback function called when time is changed
-    callbackFn: null,
-    intervalId: null,
-    setTimer: function(initialTime, callback) {
-        this.timeLeft = initialTime;
-        this.callbackFn = callback;
+    let _callbackFn = null;
+    // Callback called when timer has expired
+    let _expiredCallbackFn = null
+    let _intervalId = null;
+
+    my.setTimer = function(initialTime, callback, expiredCallback) {
+        _timeLeft = initialTime;
+        _callbackFn = callback;
+        _expiredCallbackFn = expiredCallback;
         // Reset any existing
-        clearInterval(this.intervalId);
-        this.intervalId = setInterval(timer.countDown.bind(this), 1000);
-    },
-    countDown: function() {
-        this.callbackFn(--this.timeLeft);
-        if (this.timeLeft <= 0) {
-            clearInterval(this.intervalId);
+        clearInterval(_intervalId);
+        _intervalId = setInterval(countDown, 1000);
+    }
+
+    my.clearTimer = function() {
+        clearInterval(_intervalId);
+    }
+
+    function countDown() {
+        --_timeLeft;
+        if (_callbackFn)
+            _callbackFn(_timeLeft);
+        if (_timeLeft <= 0) {
+            clearInterval(_intervalId);
+            if (_expiredCallbackFn)
+                _expiredCallbackFn();
         }
-    },
-    clearTimer() {
-        clearInterval(this.intervalId);
+    }
+
+    return my;
+}());
+
+
+$(document).ready(function() {
+    initContainer();
+})
+
+
+function initContainer() {
+    // triviaGame.setContainer( $(document).find(".container") );
+}
+
+
+$(document).on("click", ".vs-btn-start", function() {
+    $("<div>").
+        addClass("time-remaining").
+        appendTo($("#always-visible-nodes"));
+    
+    triviaGame.start();
+})
+
+$(document).on("click", ".row-choice", function() {
+    console.log("row-choice clicked " + $(this).attr("data-value"));
+    console.log($(this).attr("data-question-key"));
+    
+    const userChoice = $(this).attr("data-value");
+    buildQuestionResultView(userChoice);
+})
+
+function buildQuestionResultView(userChoice) {
+    const key = $(document).
+        find(".vs-table-head").
+        attr("data-question-key");
+
+    const qObj = TriviaQuestions.getQuestionObj(key);
+    let heading;
+    let correct = false;
+    if (!userChoice) {
+        heading = "Out of Time!";
+        result.unanswered++;
+    }
+    else if (userChoice === qObj.correctChoice) {
+        heading = "Correct";
+        correct = true;
+        result.correct++;
+    }
+    else {
+        heading = "Nope";
+        result.incorrect++;
+    }
+
+    let pageNode = $("#page-content").html("");
+
+    $("<div>").text(heading).appendTo(pageNode);
+    if (!correct) {
+        $("<div>").
+            text("The correct answer was: " + qObj.correctChoice).
+            appendTo(pageNode);
+    }
+
+    const state = extractState(qObj.question);
+    $("<img>").
+        attr("src", buildUrl(state)).
+        appendTo(pageNode);
+
+    const callbackFn = nextQuestionnaire.isAnyQuestionLeft() ? 
+        triviaGame.start : buildFinalResult;
+
+    var tm = timer;
+    tm.setTimer(QUESTION_TRANSTION_TIME, null, callbackFn);
+}
+
+function extractState(stateString) {
+    const reg = new RegExp("Capital of ", "gi");
+    return ( stateString.replace(reg, "") );
+}
+
+function buildUrl(state) {
+    let s = state.replace(" ", "%20");
+    const reg = new RegExp("<state>", "gi");
+    return ( IMAGE_LINK.replace(reg, s) );
+}
+  
+
+var nextQuestionnaire = (function() {
+    let _currentQuestion = 0;
+
+    console.log(TriviaQuestions.sessionQuestionKeys());
+    let my = {};
+    
+    my.get =  function() {
+        console.assert(this.isAnyQuestionLeft(), "Index for current question is not valid");
+
+        const qKey = TriviaQuestions.sessionQuestionKeys()[_currentQuestion];
+        console.log(qKey);
+
+        ++_currentQuestion;
+        
+        let o = {};
+        o[qKey] = TriviaQuestions.getQuestionObj(qKey);
+        return o;
+    }
+
+    my.isAnyQuestionLeft = function() {
+        return (_currentQuestion < TriviaQuestions.sessionQuestionKeys().length);
+    }
+
+    return my;
+}())
+
+function createQuestionView() {
+    const qItem = nextQuestionnaire.get();
+    const questionKey = Object.keys(qItem)[0];
+    const qObj = qItem[questionKey];
+
+    console.log(qObj);
+    $("#page-content").html("");
+
+    let tbl = $("<table>").
+        attr("class", "table table-hover text-center vs-table-borderless").
+        appendTo($("#page-content"));
+    
+    let tHead = $("<thead>").
+        attr("data-question-key", questionKey).
+        addClass("vs-table-head").
+        appendTo(tbl);
+
+    let tRow = $("<tr>").appendTo(tHead);   
+    let tH = $("<th>").
+        attr("scope", "col").
+        text(qObj.question).
+        appendTo(tRow);
+
+    let tBody = $("<tbody>").appendTo(tbl);
+    console.assert(questionKey !== undefined, "Object key not found");
+    for (let i = 0; i < qObj.choices.length; ++i) {
+        const choiceVal = qObj.choices[i];
+
+        tRow = $("<tr>").appendTo(tBody);
+        let tD = $("<td>").
+            attr({
+                "class": "row-choice vs-table-data-row",
+                "scope": "row",
+                "data-value": choiceVal,
+            }).
+            text(choiceVal).
+            appendTo(tRow);
     }
 }
+
+// Start button initially
+// Timer at top
+// Array of questions
+// show first question and make the choices clickable
+// When clicked or when times up
+// Give whether correct or wrong
+// Display a video/image too
+// After a set time (maybe 5 seconds), move to next question
+// Once all questions are done, show the final result
+
